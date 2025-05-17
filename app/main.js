@@ -21,6 +21,7 @@ const server = net.createServer((socket) => {
     const lines = requestBody.split("\r\n");
     const [method, httpPath] = lines[0].split(" ");
     let headers = {};
+    let body = lines[lines.length - 1]
     for (let i = 1; i < lines.length; i++) {
         let headerLine = lines[i].split(": ");
         if (headerLine.length === 2) {
@@ -57,8 +58,8 @@ const server = net.createServer((socket) => {
       if(directory){
         filePath = path.join(directory,filePath)
       }
-      console.log("directory is ",directory)
       let response = ''
+      //socket.write and socket.end are within the callback to ensure they are being called after the file has been read
       fs.readFile(filePath, (err, data) => {
         if(err){
           if(err.code == 'ENOENT'){
@@ -79,6 +80,26 @@ const server = net.createServer((socket) => {
           `Content-Length: ${data.length}\r\n` +
           `\r\n` +
           `${data}`
+          socket.write(response);
+          socket.end();
+        }
+      })
+    }
+    else if(method == "POST" && httpPath.includes("/files/")){
+      let filePath = httpPath.substring(7)
+      if(directory){
+        filePath = path.join(directory,filePath)
+      }
+      let response = ''
+      fs.writeFile(filePath, body, (err) => {
+        if(err){
+          response = `HTTP/1.1 500 Internal Server Error\r\n` +
+          `\r\n`
+          socket.write(response);
+          socket.end();
+        }
+        else{
+          response = `HTTP/1.1 201 Created\r\n\r\n`
           socket.write(response);
           socket.end();
         }
