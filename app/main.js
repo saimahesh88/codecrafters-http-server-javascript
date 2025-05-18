@@ -43,7 +43,7 @@ const server = net.createServer((socket) => {
                     // Handle the error appropriately (e.g., send a 500 Internal Server Error)
                     console.error('Gzip compression error:', err);
                     socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\nInternal Server Error');
-                    socket.end();
+                    //socket.end();
                     return;
                 }
                 console.log(`original length `,toEcho.length + `compress length `,compressedData.length);
@@ -56,7 +56,7 @@ const server = net.createServer((socket) => {
                    // Send the compressed data
                 socket.write(response);
                 socket.write(compressedData);
-                socket.end();
+                //socket.end();
             });
       }
       else{
@@ -66,7 +66,7 @@ const server = net.createServer((socket) => {
         `\r\n` + 
         `${toEcho}`// Important: Empty line separating headers and body
         socket.write(response);
-        socket.end();
+        //socket.end();
       }
     }
     else if(method == "GET" && httpPath.includes("/user-agent")){
@@ -78,7 +78,7 @@ const server = net.createServer((socket) => {
       `\r\n` +
       `${userAgent}`
       socket.write(response);
-      socket.end();
+      //socket.end();
     }
     else if(method == "GET" && httpPath.includes("/files/")){
       let filePath = httpPath.substring(7)
@@ -98,7 +98,7 @@ const server = net.createServer((socket) => {
             `\r\n`
           }
           socket.write(response);
-          socket.end();
+          //socket.end();
         }
         else{
           console.log("File data: ",data);
@@ -108,7 +108,7 @@ const server = net.createServer((socket) => {
           `\r\n` +
           `${data}`
           socket.write(response);
-          socket.end();
+          //socket.end();
         }
       })
     }
@@ -123,20 +123,30 @@ const server = net.createServer((socket) => {
           response = `HTTP/1.1 500 Internal Server Error\r\n` +
           `\r\n`
           socket.write(response);
-          socket.end();
+          //socket.end();
         }
         else{
           response = `HTTP/1.1 201 Created\r\n\r\n`
           socket.write(response);
-          socket.end();
+          //socket.end();
         }
       })
     }
     else{
         socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
-        socket.end();
+        //socket.end();
     }
   })
+
+    socket.on('end', () => {
+        console.log('Client disconnected');
+        //  This is where you handle the end of the *entire* connection.
+        //  The client is done sending requests.
+    });
+
+    socket.on('error', (err) => {
+        console.error('Socket error:', err);
+    });
 });
 
 server.listen(4221, "localhost");
