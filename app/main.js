@@ -1,6 +1,7 @@
 const net = require("net");
 const fs = require('fs')
-const path = require("path"); 
+const path = require("path");
+var zlib = require('zlib');
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 console.log("Logs from your program will appear here!");
@@ -36,22 +37,37 @@ const server = net.createServer((socket) => {
       const toEcho = httpPath.substring(6);
       let acceptEncoding = headers['Accept-Encoding'] || '';
       let hasGzipEncoding = acceptEncoding.includes('gzip');
-      let response = `HTTP/1.1 200 OK\r\n` +
-      `Content-Type: text/plain\r\n` +
-      `Content-Length: ${toEcho.length}\r\n` +
-      `\r\n` + 
-      `${toEcho}`// Important: Empty line separating headers and body
       if(hasGzipEncoding){
-        console.log(`gzip encode`)
-        response = `HTTP/1.1 200 OK\r\n` +
+            zlib.gzip(toEcho, (err, compressedData) => {
+                if (err) {
+                    // Handle the error appropriately (e.g., send a 500 Internal Server Error)
+                    console.error('Gzip compression error:', err);
+                    socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\nInternal Server Error');
+                    socket.end();
+                    return;
+                }
+                console.log(`original length `,toEcho.length + `compress length `,compressedData.length);
+                const response =
+                    `HTTP/1.1 200 OK\r\n` +
+                    `Content-Type: text/plain\r\n` +
+                    `Content-Encoding: gzip\r\n` +
+                    `Content-Length: ${compressedData.length}\r\n` +
+                    `\r\n` 
+                   // Send the compressed data
+                socket.write(response);
+                socket.write(compressedData);
+                socket.end();
+            });
+      }
+      else{
+        const response = `HTTP/1.1 200 OK\r\n` +
         `Content-Type: text/plain\r\n` +
-        `Content-Encoding: gzip\r\n` +
         `Content-Length: ${toEcho.length}\r\n` +
         `\r\n` + 
-        `${toEcho}`
+        `${toEcho}`// Important: Empty line separating headers and body
+        socket.write(response);
+        socket.end();
       }
-      socket.write(response);
-      socket.end();
     }
     else if(method == "GET" && httpPath.includes("/user-agent")){
       let userAgent = headers['User-Agent'] || '';
