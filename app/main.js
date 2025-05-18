@@ -33,12 +33,23 @@ const server = net.createServer((socket) => {
         socket.end()
     }
     else if(method == "GET" && httpPath.includes("/echo")){
-      const toEcho = httpPath.substring(6)
-      const response = `HTTP/1.1 200 OK\r\n` +
+      const toEcho = httpPath.substring(6);
+      let acceptEncoding = headers['Accept-Encoding'] || '';
+      let hasGzipEncoding = acceptEncoding.includes('gzip');
+      let response = `HTTP/1.1 200 OK\r\n` +
       `Content-Type: text/plain\r\n` +
       `Content-Length: ${toEcho.length}\r\n` +
       `\r\n` + 
       `${toEcho}`// Important: Empty line separating headers and body
+      if(hasGzipEncoding){
+        console.log(`gzip encode`)
+        response = `HTTP/1.1 200 OK\r\n` +
+        `Content-Type: text/plain\r\n` +
+        `Content-Encoding: gzip\r\n` +
+        `Content-Length: ${toEcho.length}\r\n` +
+        `\r\n` + 
+        `${toEcho}`
+      }
       socket.write(response);
       socket.end();
     }
