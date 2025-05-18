@@ -29,9 +29,17 @@ const server = net.createServer((socket) => {
             headers[headerLine[0]] = headerLine[1];
         }
     }
+    let closeConnection = headers['Connection']==='close'
     if(method == "GET" && httpPath == "/"){
-        socket.write("HTTP/1.1 200 OK\r\n\r\n");
+        
+        //socket.end()
+      if(closeConnection){
+        let response = `HTTP/1.1 200 OK\r\n` +
+                        `Connection: close\r\n\r\n`
+        socket.write(response)
         socket.end()
+      }
+      socket.write("HTTP/1.1 200 OK\r\n\r\n");
     }
     else if(method == "GET" && httpPath.includes("/echo")){
       const toEcho = httpPath.substring(6);
@@ -47,19 +55,44 @@ const server = net.createServer((socket) => {
                     return;
                 }
                 console.log(`original length `,toEcho.length + `compress length `,compressedData.length);
-                const response =
-                    `HTTP/1.1 200 OK\r\n` +
-                    `Content-Type: text/plain\r\n` +
-                    `Content-Encoding: gzip\r\n` +
-                    `Content-Length: ${compressedData.length}\r\n` +
-                    `\r\n` 
-                   // Send the compressed data
-                socket.write(response);
-                socket.write(compressedData);
-                //socket.end();
+                if(closeConnection){
+                  const response =
+                      `HTTP/1.1 200 OK\r\n` +
+                      `Content-Type: text/plain\r\n` +
+                      `Content-Encoding: gzip\r\n` +
+                      `Content-Length: ${compressedData.length}\r\n` +
+                      `Connection: close\r\n`+
+                      `\r\n` 
+                    // Send the compressed data
+                  socket.write(response);
+                  socket.write(compressedData);
+                  socket.end()
+                }
+                else{
+                  const response =
+                      `HTTP/1.1 200 OK\r\n` +
+                      `Content-Type: text/plain\r\n` +
+                      `Content-Encoding: gzip\r\n` +
+                      `Content-Length: ${compressedData.length}\r\n` +
+                      `\r\n` 
+                    // Send the compressed data
+                  socket.write(response);
+                  socket.write(compressedData);
+                  //socket.end();
+                }
             });
       }
       else{
+        if(closeConnection){
+          const response = `HTTP/1.1 200 OK\r\n` +
+          `Content-Type: text/plain\r\n` +
+          `Content-Length: ${toEcho.length}\r\n` +
+          `Connection: close\r\n`+
+          `\r\n` + 
+          `${toEcho}`// Important: Empty line separating headers and body
+          socket.write(response);
+          socket.end()
+        }
         const response = `HTTP/1.1 200 OK\r\n` +
         `Content-Type: text/plain\r\n` +
         `Content-Length: ${toEcho.length}\r\n` +
@@ -72,6 +105,16 @@ const server = net.createServer((socket) => {
     else if(method == "GET" && httpPath.includes("/user-agent")){
       let userAgent = headers['User-Agent'] || '';
       console.log('userAgent '+userAgent)
+      if(closeConnection){
+        const response = `HTTP/1.1 200 OK\r\n` +
+        `Content-Type: text/plain\r\n` +
+        `Content-Length: ${userAgent.length}\r\n` +
+        `Connection: close\r\n`+
+        `\r\n` +
+        `${userAgent}`
+        socket.write(response);
+        socket.end();
+      }
       const response = `HTTP/1.1 200 OK\r\n` +
       `Content-Type: text/plain\r\n` +
       `Content-Length: ${userAgent.length}\r\n` +
@@ -92,16 +135,36 @@ const server = net.createServer((socket) => {
           if(err.code == 'ENOENT'){
             response = `HTTP/1.1 404 Not Found\r\n` +
             `\r\n`
+            if(closeConnection){
+              response = `HTTP/1.1 404 Not Found\r\n` +`Connection: close\r\n`+
+            `\r\n`
+              socket.end();
+            }
           }
           else{
             response = `HTTP/1.1 500 Internal Server Error\r\n` +
             `\r\n`
+            if(closeConnection){
+              response = `HTTP/1.1 500 Internal Server Error\r\n` +`Connection: close\r\n`+
+            `\r\n`
+              socket.end();
+            }
           }
           socket.write(response);
           //socket.end();
         }
         else{
           console.log("File data: ",data);
+          if(closeConnection){
+            response = `HTTP/1.1 200 OK\r\n` +
+            `Content-Type: application/octet-stream\r\n` +
+            `Content-Length: ${data.length}\r\n` +
+            `Connection: close\r\n`+
+            `\r\n` +
+            `${data}`
+            socket.write(response);
+            socket.end();
+          }
           response = `HTTP/1.1 200 OK\r\n` +
           `Content-Type: application/octet-stream\r\n` +
           `Content-Length: ${data.length}\r\n` +
@@ -122,17 +185,33 @@ const server = net.createServer((socket) => {
         if(err){
           response = `HTTP/1.1 500 Internal Server Error\r\n` +
           `\r\n`
+          if(closeConnection){
+          response = `HTTP/1.1 500 Internal Server Error\r\n` + `Connection: close\r\n`+
+          `\r\n`
+          socket.write(response);
+          socket.end();
+          }
           socket.write(response);
           //socket.end();
         }
         else{
           response = `HTTP/1.1 201 Created\r\n\r\n`
+          if(closeConnection){
+          response = `HTTP/1.1 201 Created\r\n` + `Connection: close\r\n`+
+          `\r\n`
+          socket.write(response);
+          socket.end();
+          }
           socket.write(response);
           //socket.end();
         }
       })
     }
     else{
+        if(closeConnection){
+          socket.write("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
+          socket.end();
+        }
         socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
         //socket.end();
     }
@@ -142,7 +221,7 @@ const server = net.createServer((socket) => {
   The 'close' event would indicate that the client has completely disconnected, and the server should clean up any resources associated with that socket.
 */
     socket.on('end', () => {
-        console.log('Client disconnected');
+        console.log('Server disconnected, no more data to send');
         //  This is where you handle the end of the *entire* connection.
         //  The client is done sending requests.
     });
