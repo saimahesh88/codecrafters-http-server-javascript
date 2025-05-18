@@ -220,11 +220,6 @@ const server = net.createServer((socket) => {
   The 'end' event indicates that the server has stopped sending data, but the connection is still open.  The client could potentially send a request.
   The 'close' event would indicate that the client has completely disconnected, and the server should clean up any resources associated with that socket.
 */
-    socket.on('end', () => {
-        console.log('Server disconnected, no more data to send');
-        //  This is where you handle the end of the *entire* connection.
-        //  The client is done sending requests.
-    });
 
     socket.on('error', (err) => {
         console.error('Socket error:', err);
