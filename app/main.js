@@ -227,3 +227,7 @@ const server = net.createServer((socket) => {
 });
 
 server.listen(4221, "localhost");
+
+
+//https://en.wikipedia.org/wiki/HTTP_compression
+//https://web.dev/articles/optimizing-content-efficiency-optimize-encoding-and-transfer
