@@ -186,10 +186,10 @@ const server = net.createServer((socket) => {
           response = `HTTP/1.1 500 Internal Server Error\r\n` +
           `\r\n`
           if(closeConnection){
-          response = `HTTP/1.1 500 Internal Server Error\r\n` + `Connection: close\r\n`+
-          `\r\n`
-          socket.write(response);
-          socket.end();
+            response = `HTTP/1.1 500 Internal Server Error\r\n` + `Connection: close\r\n`+
+            `\r\n`
+            socket.write(response);
+            socket.end();
           }
           socket.write(response);
           //socket.end();
@@ -197,10 +197,10 @@ const server = net.createServer((socket) => {
         else{
           response = `HTTP/1.1 201 Created\r\n\r\n`
           if(closeConnection){
-          response = `HTTP/1.1 201 Created\r\n` + `Connection: close\r\n`+
-          `\r\n`
-          socket.write(response);
-          socket.end();
+            response = `HTTP/1.1 201 Created\r\n` + `Connection: close\r\n`+
+            `\r\n`
+            socket.write(response);
+            socket.end();
           }
           socket.write(response);
           //socket.end();
